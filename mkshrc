@@ -86,6 +86,12 @@ done
 
 unset p
 
+if [ -z $(getprop persist.sys.extstorage)]; then
+	extsd='/sdcard'
+else
+	extsd=$(getprop persist.sys.extstorage)
+fi
+
 function plaintweakhelp {
 echo "The following commands are valid:"
 echo "command: function"
@@ -107,6 +113,9 @@ echo "toggle - Toggles Plain-Tweak kernel & LCD density service"
 
 }
 function gov {
+	gov=$1
+	if [ -z $gov ]; then
+	sysrw
 	echo "Cores 1/2 Governor selection:"
 	echo
 	governors=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors | sed 's/ /\n/g' | sed '$d')
@@ -128,49 +137,65 @@ function gov {
 	echo "Invalid selection: Aborting script"
 	exit
 	fi
-	sed -i '/gov=/d' /$extsd/plaintweak
-	sed -i '/gov=/d' /vendor/overlay/local.prop
+	sed -i '/gov=/d' $extsd/plaintweak
+	setprop persist.sys.gov ""
 	if [ "$input" != "0" ];then
 	gov=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors | sed 's/ /\n/g' | sed '$d' | head -n $input | tail -n 1)
-	echo 'gov='$gov >> /sdcard/plaintweak
-	echo 'gov='$gov >> /vendor/build.prop
+	echo 'gov='$gov >> $extsd/plaintweak
+	setprop persist.sys.gov $gov
 	fi
+	else
+	sed -i '/gov=/d' $extsd/plaintweak
+	echo 'gov='$gov >> $extsd/plaintweak
+	setprop persist.sys.gov $gov
+	fi
+	sysro
 clear
 }
 function gov2 {
-	echo "Cores 3/4 Governor selection:"
-	echo
-	governors=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors | sed 's/ /\n/g' | sed '$d')
-	# Load text file lines into a bash array & print as a menu.
-	OLD_IFS=$IFS
-	IFS=$'\n'
-	let line_counter=0
-	for line in $governors; do
-		let line_counter=$(($line_counter+1))
-		printf "${line_counter}) ${line}\n"
-	done
-	IFS=$OLD_IFS
-	echo "Choose number selection[0 = default or 99 = exit]:"
-	read input
-	if [ "$input" == "99" ];then
-	exit
-	fi
-	if [ "$input" -gt "$line_counter" ];then
-	echo "Invalid selection: Aborting script"
-	exit
-	fi
-	sed -i '/gov2=/d' /sdcard/plaintweak
-	sed -i '/gov2=/d' /vendor/build.prop
-	if [ "$input" != "0" ];then
-	gov=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors | sed 's/ /\n/g' | sed '$d' | head -n $input | tail -n 1)
-	echo 'gov2='$gov >> /sdcard/plaintweak
-	echo 'gov2='$gov >> /vendor/build.prop
-	fi
+gov2=$1
+if [ -z $gov2 ]; then
+echo "Cores 3/4 Governor selection:"
+echo
+governors=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors | sed 's/ /\n/g' | sed '$d')
+# Load text file lines into a bash array & print as a menu.
+OLD_IFS=$IFS
+IFS=$'\n'
+let line_counter=0
+for line in $governors; do
+	let line_counter=$(($line_counter+1))
+	printf "${line_counter}) ${line}\n"
+done
+IFS=$OLD_IFS
+echo "Choose number selection[0 = default or 99 = exit]:"
+read input
+if [ "$input" == "99" ];then
+exit
+fi
+if [ "$input" -gt "$line_counter" ];then
+echo "Invalid selection: Aborting script"
+exit
+fi
+sed -i '/gov2=/d' $extsd/plaintweak
+setprop persist.sys.gov2 ""
+if [ "$input" != "0" ];then
+gov=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors | sed 's/ /\n/g' | sed '$d' | head -n $input | tail -n 1)
+echo 'gov2='$gov2 >> $extsd/plaintweak
+setprop persist.sys.gov2 $gov2
+fi
+else
+sed -i '/gov2=/d' $extsd/plaintweak
+echo 'gov2='$gov2 >> $extsd/plaintweak
+setprop persist.sys.gov2 $gov2
+fi
 clear
 }
 function minkhz {
+	minkhz=$1
+	if [ -n $1 ]; then
+	sysrw
 	echo "Cores 1/2 Min CPU Clock selection:"
-	echo 
+	echo
 	frequencies=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | head -n 4)
 	# Load text file lines into a bash array.
 	OLD_IFS=$IFS
@@ -190,18 +215,27 @@ function minkhz {
 	echo "Invalid selection: Aborting script"
 	exit
 	fi
-	sed -i '/minkhz=/d' /vendor/build.prop
-	sed -i '/minkhz=/d' /sdcard/plaintweak
+	sed -i '/minkhz=/d' $extsd/plaintweak
+	setprop persist.sys.minkhz ""
 	if [ "$input" != "0" ];then
 	minkhz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | head -n 4 | head -n $input | tail -n 1)
-	echo 'minkhz='$minkhz >> /sdcard/plaintweak
-	echo 'minkhz='$minkhz >> /vendor/build.prop
+	echo 'minkhz='$minkhz >> $extsd/plaintweak
+	setprop persist.sys.minkhz $minkhz
 	fi
+	else
+	sed -i '/minkhz=/d' $extsd/plaintweak
+	echo 'minkhz='$minkhz >> $extsd/plaintweak
+	setprop persist.sys.minkhz $minkhz
+	fi
+	sysro
 clear
 }
 function minkhz2 {
+	minkhz2=$1
+	if [ -z $minkhz2 ]
+	sysrw
 	echo "Cores 3/4 Min CPU Clock selection:"
-	echo 
+	echo
 	frequencies=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | head -n 4)
 	# Load text file lines into a bash array.
 	OLD_IFS=$IFS
@@ -221,18 +255,27 @@ function minkhz2 {
 	echo "Invalid selection: Aborting script"
 	exit
 	fi
-	sed -i '/minkhz2=/d' /vendor/build.prop
-	sed -i '/minkhz2=/d' /sdcard/plaintweak
+	sed -i '/minkhz2=/d' $extsd/plaintweak
+	setprop persist.sys.minkhz2 ""
 	if [ "$input" != "0" ];then
 	minkhz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | head -n 4 | head -n $input | tail -n 1)
-	echo 'minkhz2='$minkhz >> /sdcard/plaintweak
-	echo 'minkhz2='$minkhz >> /vendor/build.prop
+	echo 'minkhz2='$minkhz >> $extsd/plaintweak
+	setprop persist.sys.minkhz2 $minkhz
 	fi
+	else
+	sed -i '/minkhz2=/d' $extsd/plaintweak
+	echo 'minkhz2='$minkhz2 >> $extsd/plaintweak
+	setprop persist.sys.minkhz2 $minkhz2
+	fi
+	sysro
 clear
 }
 function maxkhz {
+	maxkhz=$1
+	if [ -z $maxkhz ]; then
+	sysrw
 	echo "Cores 1/2 Max CPU Clock selection:"
-	echo 
+	echo
 	frequencies=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | tail -n 5)
 	# Load text file lines into a bash array.
 	OLD_IFS=$IFS
@@ -252,18 +295,27 @@ function maxkhz {
 	echo "Invalid selection: Aborting script"
 	exit
 	fi
-	sed -i '/maxkhz=/d' /vendor/build.prop
-	sed -i '/maxkhz=/d' /sdcard/plaintweak
+	sed -i '/maxkhz=/d' $extsd/plaintweak
+	setprop persist.sys.maxkhz ""
 	if [ "$input" != "0" ];then
 	maxkhz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | tail -n 5 | head -n $input | tail -n 1)
-	echo 'maxkhz='$maxkhz >> /sdcard/plaintweak
-	echo 'maxkhz='$maxkhz >> /vendor/build.prop
+	echo 'maxkhz='$maxkhz >> $extsd/plaintweak
+	setprop persist.sys.maxkhz $maxkhz
 	fi
+	else
+	sed -i '/maxkhz=/d' $extsd/plaintweak
+	echo 'maxkhz='$maxkhz >> $extsd/plaintweak
+	setprop persist.sys.maxkhz $maxkhz
+	fi
+	sysro
 clear
 }
 function maxkhz2 {
+	maxkhz2=$1
+	if [ -z $maxkhz2 ]; then
+	sysrw
 	echo "Cores 3/4 Max CPU Clock selection:"
-	echo 
+	echo
 	frequencies=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | tail -n 5)
 	# Load text file lines into a bash array.
 	OLD_IFS=$IFS
@@ -283,18 +335,27 @@ function maxkhz2 {
 	echo "Invalid selection: Aborting script"
 	exit
 	fi
-	sed -i '/maxkhz2=/d' /vendor/build.prop
-	sed -i '/maxkhz2=/d' /sdcard/plaintweak
+	sed -i '/maxkhz2=/d' $extsd/plaintweak
+	setprop persist.sys.maxkhz2 ""
 	if [ "$input" != "0" ];then
 	maxkhz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_frequencies | sed 's/ /\n/g' | sed '$d' | tail -n 5 | head -n $input | tail -n 1)
-	echo 'maxkhz2='$maxkhz >> /sdcard/plaintweak
-	echo 'maxkhz2='$maxkhz >> /vendor/build.prop
+	echo 'maxkhz2='$maxkhz >> $extsd/plaintweak
+	setprop persist.sys.maxkhz2 $maxkhz
 	fi
+	else
+	sed -i '/maxkhz2=/d' $extsd/plaintweak
+	echo 'maxkhz2='$maxkhz2 >> $extsd/plaintweak
+	setprop persist.sys.maxkhz2 $maxkhz2
+	fi
+	sysro
 clear
 }
 function scheduler {
+scheduler=$1
+if [ -z $scheduler ];then
+sysrw
 echo "IO Scheduler selection:"
-echo 
+echo
 schedulers=$(cat /sys/block/mmcblk0/queue/scheduler | sed 's/[[]//g' | sed 's/[]]//g' | sed 's/ /\n/g' | sed '$d')
 # Load text file lines into a bash array.
 OLD_IFS=$IFS
@@ -314,17 +375,27 @@ if [ "$input" -gt "$line_counter" ];then
 echo "Invalid selection: Aborting script"
 exit
 fi
+sed -i '/scheduler=/d' $extsd/plaintweak
+setprop persist.sys.scheduler ""
 if [ "$input" != "0" ];then
 scheduler=$(cat /sys/block/mmcblk0/queue/scheduler | sed 's/[[]//g' | sed 's/[]]//g' | sed 's/ /\n/g' | sed '$d' | sed 's/ //g' | head -n $input | tail -n 1)
-echo 'scheduler='$scheduler >> /sdcard/plaintweak
-sed -i '/scheduler=/d' /vendor/build.prop
-echo 'scheduler='$scheduler >> /vendor/build.prop
+echo 'scheduler='$scheduler >> $extsd/plaintweak
+setprop persist.sys.scheduler $scheduler
 fi
+else
+sed -i '/scheduler=/d' $extsd/plaintweak
+echo 'scheduler='$scheduler >> $extsd/plaintweak
+setprop persist.sys.scheduler $scheduler
+fi
+sysro
 clear
 }
 function tcpcong {
+tcpcong=$1
+if [ -z $tcpcong ]; then
+sysrw
 echo "TCP Congestion Control selection:"
-echo 
+echo
 tcpcong=$(cat /proc/sys/net/ipv4/tcp_available_congestion_control | sed 's/ /\n/g')
 # Load text file lines into a bash array.
 OLD_IFS=$IFS
@@ -344,33 +415,47 @@ if [ "$input" -gt "$line_counter" ];then
 echo "Invalid selection: Aborting script"
 exit
 fi
-sed -i '/tcpcong=/d' /vendor/build.prop
-sed -i '/tcpcong=/d' /sdcard/plaintweak
+sed -i '/tcpcong=/d' $extsd/plaintweak
+setprop persist.sys.tcpcong ""
 if [ "$input" != "0" ];then
 tcpcong=$(cat /proc/sys/net/ipv4/tcp_available_congestion_control | sed 's/ /\n/g' | head -n $input | tail -n 1)
-echo 'tcpcong='$tcpcong >> /sdcard/plaintweak
-echo 'tcpcong='$tcpcong >> /vendor/build.prop
+echo 'tcpcong='$tcpcong >> $extsd/plaintweak
+setprop persist.sys.tcpcong $tcpcong
+sysro
+fi
+sed -i '/tcpcong=/d' $extsd/plaintweak
+echo 'tcpcong='$tcpcong >> $extsd/plaintweak
+setprop persist.sys.tcpcong $tcpcong
 fi
 }
 
 function backupbuildprop {
+	sysrw
 	cp /system/build.prop /system/.build.prop-original
+	sysro
 }
 function restorebuildprop {
+	sysrw
 	cp /system/.build.prop-original /system/build.prop
+	sysro
 }
 function restoreplaintweakconfig {
-	mkdir -p /system/vendor/overlay
-	if [ -e /sdcard/plaintweak ]; then
-	cat /sdcard/plaintweak > /system/vendor/build.prop
+	sysrw
+	if [ -e $extsd/plaintweak ]; then
+	for line in $(cat $extsd/plaintweak)
+	do
+	setprop persist.sys.$(echo $line | sed s'/=/ /')
+	done
 	fi
-	if [ -e /sdcard/customdensity ]; then
-	cat /sdcard/customdensity >> /system/vendor/build.prop
+	if [ -e $extsd/customdensity ]; then
+	cat $extsd/customdensity >> /system/vendor/build.prop
 	fi
-	echo 'enable_plaintweak=1' >> /system/vendor/build.prop
+	setprop persist.sys.enable_plaintweak 1
 	chmod 0644 /system/vendor/build.prop
+	sysro
 }
 function bootanim {
+	sysrw
 	bootanim=$(grep "debug.sf.nobootanimation" /vendor/build.prop | sed 's/debug.sf.nobootanimation*.//')
 	if [ -n $bootanim ]; then
 	if [ "$bootanim" == "1" ]; then
@@ -383,11 +468,13 @@ function bootanim {
 	echo "Disabling Boot Animation"
 	echo "debug.sf.nobootanimation=1" >> /vendor/build.prop
 	fi
+	sysro
 }
 function density {
+	sysrw
 	case "$setdensity" in
 		stock)
-		rm /sdcard/customdensity
+		rm $extsd/customdensity
 		if [ -e /tmp/recovery.log ]; then
 		echo $setdensity" is density obtained from Aroma" >> /tmp/recovery.log
 		else
@@ -398,7 +485,7 @@ function density {
 		fi
 		;;
 		*)
-		echo 'customdensity='$setdensity > /sdcard/customdensity
+		echo 'customdensity='$setdensity > $extsd/customdensity
 		if [ -e /tmp/recovery.log ]; then
 		echo $setdensity" is density obtained from Aroma" >> /tmp/recovery.log
 		else
@@ -409,21 +496,22 @@ function density {
 		fi
 		;;
 	esac
+	sysro
 }
-function pttoggle {
-	toggle=$(getprop enable_plaintweak)
-	sed -i '/enable_plaintweak/d' /vendor/build.prop
+function toggle {
+	toggle=$(getprop persist.sys.enable_plaintweak)
 	if [ "$toggle" == "0" ]; then
 	echo "Enabling Plain-Tweak"
-	setprop enable_plaintweak 1
+	setprop persist.sys.enable_plaintweak 1
 	fi
 	if [ "$toggle" == "1" ]; then
 	echo "Disabling Plain-Tweak"
-	setprop enable_plaintweak 0
+	setprop persist.sys.enable_plaintweak 0
 	fi
+	sh /system/etc/init.plain.kerneltweak.sh
 }
 function kernelconfig {
-    maxkhz 
+  maxkhz
 	maxkhz2
 	minkhz
 	minkhz2
@@ -433,4 +521,4 @@ function kernelconfig {
 	tcpcong
 }
 
-: place customisations above this line
+: place customizations above this line
